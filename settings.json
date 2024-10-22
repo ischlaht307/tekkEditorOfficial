@@ -1,0 +1,18 @@
+{
+    "workbench.iconTheme": "material-icon-theme",
+    "database-client.autoSync": true,
+    "mssql.objectExplorer.groupBySchema": true,
+    "mssql.enableQueryHistoryCapture": false,
+    "livePreview.notifyOnOpenLooseFile": false,
+    "editor.linkedEditing": true,
+    "npm.keybindingsChangedWarningShown": true,
+    "workbench.activityBar.location": "hidden",
+    "cSpell.userWords": [
+        "Droidscript",
+        "fillxy",
+        "Tekk"
+    ],
+    "[javascript]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
+    }
+}
