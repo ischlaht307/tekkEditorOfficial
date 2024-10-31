@@ -11,41 +11,57 @@ class Main extends App{
         this.btn = ui.addButton( this.layMain, "My Button", "primary" )
         this.btn.setOnTouch( ()=>{ app.Vibrate( "0,100,30,100" ); } )
         
-        this.editor = new Editor(this.layMain, 0.98, 0.90);
+        this.editor = new Editor(this.layMain, 0.90, 0.80);
+
     }
 }
 
 
-
 class Editor{
+    #_CACHE = new Map();
     constructor(layout, width, height){
         this.self = this;
         this.loaded = false;
         this.lay = layout;
         this.width = width;
         this.height = height;
+        this.AceEditor = null;
         this.lays = {base: null};
-          this.config_keys_array = Object.keys(_config);
-          this.config_jCache = null;
-          
-          this._config = (function(self){
-              if(self.config_jCache) return self.config_jCache;
-              else{
-                  if(app.FileExists("AceEditor/config.json") ){
-                      self.config_jCache = app.ReadFile("AceEditor/config.json");
-                           return self.config_jCache;
-                  }
-                  else{
-                      const file = app.WriteFile("./AceEditor/config.json", JSON.stringify(_config));
-                          if(!app.ReadFile("./AceEditor/config.json")) app.Error("Failed to intitalise Ace Editor configuration", 0,"./TekkEditor.js", true);
-                              self.config_jCache = JSON.stringify(_config)
-                             return self.config_jCache;
-                   }// inner else---end
-              }// outer else--end
-            })(this.self);//this._config--end
+        this._languageModes = _config_.getLanguageModes;
+        this.config_keys_array = Object.keys(_config_.init_options);
+        this._Mode = (function(self){
+            if (self.#_CACHE.has("mode")) return self.#_CACHE.get("mode")
+            else{
+                let m = app.LoadText("mode", "javascript");
+                self.#_CACHE.set("mode", m);
+            }
+            return self.#_CACHE.get("mode");
+        })(this.self);
+  
+        this._options_List = (function(self){
+            if(self.#_CACHE.has("options")) return self.#_CACHE.get("options");
+            else{
+                if(app.FileExists("AceEditor/config.json") ){
+                    self.#_CACHE.set("options",app.ReadFile("AceEditor/config.json"));
+                        return self.#_CACHE.get("options");
+                }
+                else{
+                    let file = app.WriteFile("./AceEditor/config.json", JSON.stringify(_config_.init_options));
+                        if(!app.ReadFile("./AceEditor/config.json")) app.Error("Failed to intitalise Ace Editor configuration", 0,"./TekkEditor.js", true);
+                            self.#_CACHE.set("options",JSON.stringify(_config_.init_options));
+                            return self.#_CACHE.get("options");
+                }// inner else---end
+            }// outer else--end
+        })(this.self);//this._config--end
             
             this._createEditor();
     }// constructor
+    get Mode(){
+        return this._Mode;
+    }
+    set Mode(x){
+
+    }
     updateEditorOption(opt){
         let optObject = JSON.parse(this._config);
         let {name, value, callback} = opt;
@@ -54,43 +70,93 @@ class Editor{
     
     _createEditor(){
     
-        //if(!this.lays.base){
-            this.base_Lay = ui.addLayout(this.lay, "Linear","Top,ScrollXY", this.width, this.height );
-            this.button_bar = ui.addLayout(this.base_Lay, "Linear", "FillX", -1, 0.1);
+        if(!this.lays.base){
+            let base = this.lays.base = ui.addLayout(this.lay, "Linear","Top", this.width, this.height );
+            this.lays.buttonBar = {};
+            let bbar = this.lays.buttonBar = ui.addLayout(base, "Linear", "Left,FillX", -1, 0.08);
 
-            this.modeSelector = ui.addSelect(this.button_bar, "Select Mode", "FillXY", -1, -1);
-            this.modeSelector.backColor = "white";
-            this.modeSelector.cornerRadius = [20,20,20,20];
-            this.modeSelector.list = ["JavaScript", "HTML", "CSS"];
-            this.modeSelector.setOnTouch();
-            this.web_view = ui.addWebView(this.base_Lay, "./AceEditor.html", "FillXY", -1, -1);
-            this.web_view.data.self = this;
-            this.web_view.setOnLoad(this._editorOnLoad);
+            let selector = bbar.modeSelector = ui.addSelect(bbar, "Select Mode", "Outline, Left", -1, -1);
+            selector.list = this._languageModes;
+            selector.label = "Language :"
+
+            selector.setOnTouch();
+
+            let webview = this.lays.web_View = ui.addWebView(base, "./AceEditor.html", "FillXY");
+            webview.data.self = this;
+            webview.setOnLoad(this._editorOnLoad);
         
-            this.base_Lay.border = "24px";
-            this.base_Lay.padding = [0.01,0.01,0.01,0.01];
-            this.base_Lay.cornerRadius = [10,10,10,10];
-            this.base_Lay.backColor = "black";
-            this.web_view.el.style.height = "100%";
-            this.web_view.el.style.width = "100%";
-            this.web_view.el.style.radius = "10px";
+            base.border = "24px";
+            base.padding = [0,0.02,0,0];
+            base.cornerRadius = [10,10,10,10];
+            base.backColor = "white";
+            base.el.style.boxShadow = "0 0px 20px 0 rgba(0,0,0,0.4)";
+            base.el.style.overflow = "hidden"; 
+
+            selector.backColor = "white";
+            selector.cornerRadius = [10,10,10,10];
+            selector.height = "50px";
+            selector.padding = [0,0,0,0];
+            selector.el.style.height = "50px";       
+            selector.el.style.marginTop = "10px";
+            selector.el.style.padding = "0px";
+            // selector.el.children[0].style.backgroundColor = "blue";
+            selector.el.children[0].style.padding = "0px";
+            selector.el.children[0].style.height = "30px";
+            selector._div.style.backgroundColor = "red";
+            selector._div.style.height = "30px";
+            selector._div.style.display = "inline-block";
+            app.Alert(selector._div.innerHTML);
+
+
             
-    }// _()
+            webview.el.style.boxShadow = "0 0px 20px 0 rgba(0,0,0,0.4)";
+            webview.el.style.height = "auto";
+            webview.el.style.width = "100%";
+            webview.el.style.borderTop = "1px solid black";
+
+        }
+        return this.lays;
+    }// _createEditor()--end
     
 
     _editorOnLoad(data){
-       this.window.setUpOptions(_config.init_options);
-        //this.window.findc();
-        let modeScript = this.document.getElementById("lang-mode");
-            modeScript.innerHTML = "editor.session.setMode(\'ace/mode/javascript\');";
+        //  this.data.self.AceEditor = new this.window.AceEditor(JSON.parse(this.data.self._options_List));
+        this.data.self.AceEditor = new this.window.AceEditor(_config_.init_options);
+        let mode = this.data.self.Mode;
+            this.data.self.AceEditor.options.setMode(mode);
+        mode = mode[0].toUpperCase()+mode.slice(1);
+            let idx =this.data.self._languageModes.indexOf(mode);
+                this.data.self.lays.buttonBar.modeSelector.value = idx;
+
+            //setTimeout(()=>{app.Alert(JSON.stringify(this.window.editor.session))},3000);
         this.loaded = true;
     }// _$web_viewOnLoad();
-    
 }// Editor Class-- END
+
+
+
+
+
+
+
+
+//Found Editor CSS Classes
+    // playing[0] = ace_text-input ;
+    // playing[1] =| ace_gutter -> ace_layer, ace_gutter-layer, ace_folding-enabled; 
+    //             |     <div> ==>> ace-gutter-cell; ace_gutter-active-line; 
+    //             |-----|  <span> ==>> tabindex; tabindex;
+    //             |_____</div>
+    // playing[2] = ace_scroller -> ace_content; ==>> ace_layer; ace_print-margin-layer; ace_print-margin; ace_layer ace_marker-layer; ace_active-line; 
+    //   ace_layer ace_text-layer; ace_line; ace_layer ace_curser-layer ace_marker-layer; ace_layer ace_curser-layer ace_hidden-cursers; ace_curser; 
+    // playing[3] = ace_scrollbar ace_scrollbar-v; -> ace_scrollbar-inner;
+    // playing[4] = ace_scrollbar ace_scrollbar-h; -> ace_scrollbar-inner;
+    // 
+
+
 
 /*
 editor.commands.addCommand({
-    name: 'myCommand',
+    name: 'myCommand',                                                                                                                                                                                                                                                                                                                                                      
     bindKey: {win: 'Ctrl-M',  mac: 'Command-M'},
     exec: function(editor) {
         //...
